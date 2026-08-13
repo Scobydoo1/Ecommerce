@@ -6,6 +6,7 @@ import { PrismaModule } from './common/prisma.module';
 import { HealthController } from './common/health.controller';
 import { ProductsModule } from './products/products.module';
 import { CategoriesModule } from './categories/categories.module';
+import { SearchModule } from './search/search.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { CategoriesModule } from './categories/categories.module';
     PrismaModule,
     ProductsModule,
     CategoriesModule,
+    SearchModule,
   ],
   controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
