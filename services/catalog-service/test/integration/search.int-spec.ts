@@ -63,9 +63,20 @@ beforeAll(async () => {
         sku: 'TN-003',
         name: 'Tai nghe Bluetooth chống ồn',
         slug: 'tai-nghe-bluetooth-chong-on',
-        description: 'Tai nghe không dây pin 30 giờ',
+        // "chống ồn chủ động" chua "dong", du de mo ta nay khop nham voi
+        // truy van "dong ho" neu bo loc mo ta khong duoc danh trong so.
+        description: 'Tai nghe không dây chống ồn chủ động, pin 30 giờ, sạc nhanh USB-C',
         priceCents: 1_290_000,
         stock: 8,
+        status: ProductStatus.ACTIVE,
+      },
+      {
+        sku: 'GIAY-005',
+        name: 'Giày sneaker trắng',
+        slug: 'giay-sneaker-trang',
+        description: 'Giày sneaker da tổng hợp, đế cao su chống trượt, đi hằng ngày',
+        priceCents: 890_000,
+        stock: 20,
         status: ProductStatus.ACTIVE,
       },
       {
@@ -117,6 +128,12 @@ describe('fuzzy search against a real Postgres', () => {
 
   it('matches on description text as well as name', async () => {
     expect(await names('pin 30 gio')).toContain('Tai nghe Bluetooth chống ồn');
+  });
+
+  it('does not let a weak description match drag in unrelated products', async () => {
+    // "chong on chu dong" va "chong truot" deu khop yeu voi "dong ho".
+    // Chi dong ho that su moi duoc tra ve.
+    expect(await names('dong ho')).toEqual(['Đồng hồ cơ dây da']);
   });
 
   it('never returns a DRAFT product', async () => {

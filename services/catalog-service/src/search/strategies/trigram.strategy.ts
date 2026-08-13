@@ -14,7 +14,15 @@ import type { SearchHit, SearchOptions, SearchStrategy } from '../types';
  */
 const WORD_SIMILARITY_THRESHOLD = 0.45;
 
-/** Mo ta khop kem tin cay hon ten, nen chi tinh 60% trong so. */
+/**
+ * Mo ta khop kem tin cay hon ten, nen chi tinh 60% trong so.
+ *
+ * Trong so nay duoc ap CA khi tinh diem LAN khi loc. Neu chi ap khi tinh diem,
+ * mot mo ta khop yeu van lot qua bo loc: truy van "dong ho" tung keo ve ca
+ * "Tai nghe ... chong on chu DONG" (mo ta 0.625) va "Giay sneaker ... chong
+ * truot" (mo ta 0.500). Sau khi nhan 0.6 chung con 0.375 va 0.300, nam duoi
+ * nguong, trong khi dong ho that su van dat 1.000 * 0.6 = 0.600.
+ */
 const DESCRIPTION_WEIGHT = 0.6;
 
 interface TrigramRow {
@@ -69,7 +77,7 @@ export class TrigramStrategy implements SearchStrategy {
         word_similarity(${normalizedQuery}, lower(unaccent(p."name")))
           > ${WORD_SIMILARITY_THRESHOLD}
         OR word_similarity(${normalizedQuery}, lower(unaccent(coalesce(p."description", ''))))
-          > ${WORD_SIMILARITY_THRESHOLD}
+             * ${DESCRIPTION_WEIGHT} > ${WORD_SIMILARITY_THRESHOLD}
       )
       ORDER BY score DESC, p."name" ASC
       LIMIT ${options.limit} OFFSET ${options.offset}

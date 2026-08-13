@@ -4,7 +4,6 @@
     "rootDir": ".",
     "outDir": "./dist",
     "baseUrl": ".",
-    "incremental": true,
     "declaration": false,
     "sourceMap": true,
     "noUnusedLocals": false,
