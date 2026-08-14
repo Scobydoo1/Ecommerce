@@ -1,0 +1,64 @@
+generator client {
+  provider = "prisma-client-js"
+  // Output rieng, KHONG dung mac dinh: catalog-service generate vao goi
+  // `@prisma/client` dung chung, nen neu order-service cung de mac dinh thi
+  // lan `prisma generate` sau se de len client cua service kia.
+  output          = "../generated/prisma"
+  previewFeatures = ["multiSchema"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("ORDER_DATABASE_URL")
+  schemas  = ["orders"]
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  FAILED
+  CANCELLED
+
+  @@schema("orders")
+}
+
+model Order {
+  id     String      @id @default(uuid())
+  /// Ma don hien cho khach: ORD-YYYYMMDD-XXXXXX
+  orderNumber String @unique
+  userId String?
+  email  String?
+  status OrderStatus @default(PENDING)
+
+  subtotalCents Int
+  totalCents    Int
+  currency      String @default("VND")
+
+  /// Chi luu id cua PaymentIntent. Khong bao gio luu thong tin the.
+  stripePaymentIntentId String?
+
+  items     OrderItem[]
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@schema("orders")
+}
+
+model OrderItem {
+  id      String @id @default(uuid())
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  productId String
+  /// Chup lai ten/sku/gia tai thoi diem dat. Doi gia ben catalog sau nay
+  /// khong duoc phep lam thay doi mot don da dat.
+  nameSnapshot   String
+  skuSnapshot    String
+  unitPriceCents Int
+  quantity       Int
+
+  @@index([orderId])
+  @@schema("orders")
+}
