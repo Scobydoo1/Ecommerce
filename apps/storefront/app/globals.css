@@ -1,0 +1,47 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-white text-ink font-body antialiased;
+  }
+
+  /* Vien focus dung mau vang the de nhin ro tren ca nen trang lan nen ngoc. */
+  :focus-visible {
+    @apply outline-none ring-2 ring-gold ring-offset-2 ring-offset-white;
+  }
+
+  ::selection {
+    @apply bg-jade-wash text-jade-deep;
+  }
+}
+
+@layer components {
+  /*
+   * Chu ky thi giac cua trang: the gia tien khia mot goc, muon hinh cai the
+   * gia buoc day treo o cho. Chi duy nhat cho nay duoc phep "to tieng".
+   */
+  .price-tag {
+    clip-path: polygon(0.7rem 0, 100% 0, 100% 100%, 0 100%, 0 0.7rem);
+  }
+
+  .shell {
+    @apply mx-auto w-full max-w-shell px-5 sm:px-8;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
