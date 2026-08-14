@@ -31,7 +31,8 @@ pnpm --filter @ecommerce/auth-db prisma:generate
 pnpm --filter catalog-service prisma:deploy
 pnpm --filter order-service prisma:deploy
 pnpm --filter @ecommerce/auth-db prisma:deploy
-pnpm --filter catalog-service seed              # 3 danh muc, 9 san pham
+pnpm --filter catalog-service seed              # 6 danh muc, 42 san pham
+pnpm --filter @ecommerce/auth-db seed           # 3 tai khoan demo
 
 pnpm dev
 ```

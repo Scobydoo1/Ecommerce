@@ -33,7 +33,8 @@ pnpm --filter catalog-service prisma:deploy
 pnpm --filter order-service prisma:deploy
 pnpm --filter @ecommerce/auth-db prisma:deploy
 
-pnpm --filter catalog-service seed             # 3 danh mục, 9 sản phẩm tiếng Việt
+pnpm --filter catalog-service seed             # 6 danh mục, 42 sản phẩm tiếng Việt
+pnpm --filter @ecommerce/auth-db seed          # 3 tài khoản demo
 ```
 
 Ba lệnh `prisma:generate` là bắt buộc sau mỗi lần clone mới: client sinh ra
