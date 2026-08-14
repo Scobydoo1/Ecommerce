@@ -25,6 +25,11 @@ export function SearchBar({ variant = 'header', initialQuery = '' }: Props) {
   const debouncedQuery = useDebouncedValue(query, DEBOUNCE_MS);
   const boxRef = useRef<HTMLDivElement>(null);
 
+  // Tren trang ket qua, o nhap duoc dien san tu URL. Neu chi dua vao "co chu
+  // trong o" thi danh sach goi y tu bung ra ngay khi tai trang va che mat tieu
+  // de. Chi mo khi nguoi dung that su go.
+  const hasTyped = useRef(false);
+
   useEffect(() => {
     const term = debouncedQuery.trim();
     if (term === '') {
@@ -41,7 +46,7 @@ export function SearchBar({ variant = 'header', initialQuery = '' }: Props) {
       .then((data: { items?: SuggestItem[] }) => {
         setItems(data.items ?? []);
         setHighlight(NO_HIGHLIGHT);
-        setOpen(true);
+        if (hasTyped.current) setOpen(true);
       })
       .catch(() => {
         /* request bi huy hoac mang loi: giu nguyen goi y dang hien. */
@@ -118,9 +123,12 @@ export function SearchBar({ variant = 'header', initialQuery = '' }: Props) {
           autoComplete="off"
           value={query}
           placeholder={isHero ? 'áo thun, đồng hồ, tai nghe…' : 'Tìm sản phẩm…'}
-          onChange={(event) => setQuery(event.target.value)}
+          onChange={(event) => {
+            hasTyped.current = true;
+            setQuery(event.target.value);
+          }}
           onKeyDown={onKeyDown}
-          onFocus={() => items.length > 0 && setOpen(true)}
+          onFocus={() => hasTyped.current && items.length > 0 && setOpen(true)}
           className={
             isHero
               ? 'h-14 flex-1 rounded-l-md border border-jade/30 bg-white px-4 text-lg placeholder:text-muted focus:border-jade'

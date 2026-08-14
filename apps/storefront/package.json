@@ -24,6 +24,7 @@
     "@ecommerce/config": "workspace:*",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.1.0",
+    "@testing-library/user-event": "^14.6.4",
     "@types/bcryptjs": "^3.0.0",
     "@types/jest": "^29.5.14",
     "@types/node": "^22.10.2",
