@@ -158,10 +158,10 @@ export const orderApi = {
     });
   },
 
-  checkout(sessionId: string, email: string): Promise<CheckoutResult> {
+  checkout(sessionId: string, email: string, userId?: string): Promise<CheckoutResult> {
     return orderFetch('/orders/checkout', sessionId, {
       method: 'POST',
-      body: JSON.stringify({ email }),
+      body: JSON.stringify(userId ? { email, userId } : { email }),
     });
   },
 

@@ -52,3 +52,4 @@ prisma/*.db-journal
 # Prisma client sinh ra cho order-service (output rieng de khong de len
 # client cua catalog-service)
 services/order-service/generated/
+packages/auth-db/generated/

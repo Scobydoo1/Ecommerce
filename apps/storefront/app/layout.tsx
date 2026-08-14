@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Be_Vietnam_Pro, Bricolage_Grotesque } from 'next/font/google';
 import { SearchBar } from '@/components/search-bar/SearchBar';
+import { AccountMenu } from '@/components/auth/AccountMenu';
 import './globals.css';
 
 /**
@@ -46,6 +47,8 @@ function Header() {
         </nav>
 
         <SearchBar />
+
+        <AccountMenu />
 
         <Link
           href="/cart"
