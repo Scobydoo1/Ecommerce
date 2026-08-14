@@ -24,6 +24,10 @@
       "dependsOn": ["^build"],
       "cache": false
     },
+    "e2e": {
+      "dependsOn": ["^build"],
+      "cache": false
+    },
     "lint": {},
     "typecheck": {
       "dependsOn": ["^build"]
