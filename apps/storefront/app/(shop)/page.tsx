@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { catalogApi } from '@/lib/api-client';
 import { ProductCard } from '@/components/product-card/ProductCard';
+import { SearchBar } from '@/components/search-bar/SearchBar';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,25 +34,9 @@ export default async function HomePage() {
             còn lại.
           </p>
 
-          <form action="/search" className="mt-8 flex max-w-2xl flex-col gap-3 sm:flex-row">
-            <label htmlFor="hero-search" className="sr-only">
-              Tìm sản phẩm
-            </label>
-            <input
-              id="hero-search"
-              type="search"
-              name="q"
-              autoComplete="off"
-              placeholder="áo thun, đồng hồ, tai nghe…"
-              className="h-14 flex-1 rounded-md border border-jade/30 bg-white px-4 text-lg placeholder:text-muted focus:border-jade"
-            />
-            <button
-              type="submit"
-              className="h-14 shrink-0 rounded-md bg-jade px-8 font-medium text-white transition-colors hover:bg-jade-deep"
-            >
-              Tìm sản phẩm
-            </button>
-          </form>
+          <div className="mt-8">
+            <SearchBar variant="hero" />
+          </div>
 
           <div className="mt-5 flex flex-wrap items-center gap-2 text-sm">
             <span className="text-muted">Thử gõ sai xem:</span>

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Be_Vietnam_Pro, Bricolage_Grotesque } from 'next/font/google';
+import { SearchBar } from '@/components/search-bar/SearchBar';
 import './globals.css';
 
 /**
@@ -44,24 +45,7 @@ function Header() {
           </Link>
         </nav>
 
-        <form action="/search" className="ml-auto flex w-full max-w-xs items-center">
-          <label htmlFor="header-search" className="sr-only">
-            Tìm sản phẩm
-          </label>
-          <input
-            id="header-search"
-            type="search"
-            name="q"
-            placeholder="Tìm sản phẩm…"
-            className="h-10 w-full rounded-l-md border border-line bg-mist px-3 text-sm placeholder:text-muted focus:border-jade"
-          />
-          <button
-            type="submit"
-            className="h-10 shrink-0 rounded-r-md bg-jade px-4 text-sm font-medium text-white hover:bg-jade-deep"
-          >
-            Tìm
-          </button>
-        </form>
+        <SearchBar />
 
         <Link
           href="/cart"
