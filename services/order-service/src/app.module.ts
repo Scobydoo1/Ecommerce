@@ -6,6 +6,7 @@ import { PrismaModule } from './common/prisma.module';
 import { RedisModule } from './common/redis.module';
 import { HealthController } from './common/health.controller';
 import { CartModule } from './cart/cart.module';
+import { OrdersModule } from './orders/orders.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { CartModule } from './cart/cart.module';
     PrismaModule,
     RedisModule,
     CartModule,
+    OrdersModule,
   ],
   controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],

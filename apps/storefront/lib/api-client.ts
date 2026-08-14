@@ -1,5 +1,8 @@
 import type {
+  CartView,
   CategorySummary,
+  CheckoutResult,
+  OrderView,
   Paginated,
   ProductDetail,
   ProductSummary,
@@ -8,6 +11,7 @@ import type {
 } from '@ecommerce/types';
 
 const CATALOG_BASE = process.env.NEXT_PUBLIC_CATALOG_API_URL ?? 'http://localhost:3001';
+const ORDER_BASE = process.env.NEXT_PUBLIC_ORDER_API_URL ?? 'http://localhost:3002';
 
 export type QueryValue = string | number | boolean | undefined | null;
 export type QueryParams = Record<string, QueryValue>;
@@ -103,5 +107,65 @@ export const catalogApi = {
 
   suggest(q: string): Promise<SuggestResponse> {
     return getJson(buildUrl(CATALOG_BASE, '/search/suggest', { q }));
+  },
+};
+
+/** Moi loi goi den order-service deu mang theo phien gio hang. */
+async function orderFetch<T>(
+  path: string,
+  sessionId: string,
+  init: RequestInit = {},
+): Promise<T> {
+  const url = `${ORDER_BASE}${path}`;
+
+  const response = await fetch(url, {
+    ...init,
+    cache: 'no-store',
+    headers: {
+      accept: 'application/json',
+      'content-type': 'application/json',
+      'x-cart-session': sessionId,
+      ...init.headers,
+    },
+  });
+
+  if (!response.ok) {
+    const body = (await response.json().catch(() => ({}))) as { message?: string | string[] };
+    const message = Array.isArray(body.message) ? body.message.join(', ') : body.message;
+    throw new ApiError(response.status, url, message ?? `${response.status} ${response.statusText}`);
+  }
+
+  if (response.status === 204) return undefined as T;
+  return (await response.json()) as T;
+}
+
+export const orderApi = {
+  getCart(sessionId: string): Promise<CartView> {
+    return orderFetch('/cart', sessionId);
+  },
+
+  addItem(sessionId: string, productId: string, quantity: number): Promise<CartView> {
+    return orderFetch('/cart/items', sessionId, {
+      method: 'POST',
+      body: JSON.stringify({ productId, quantity }),
+    });
+  },
+
+  setQuantity(sessionId: string, productId: string, quantity: number): Promise<CartView> {
+    return orderFetch(`/cart/items/${encodeURIComponent(productId)}`, sessionId, {
+      method: 'PUT',
+      body: JSON.stringify({ quantity }),
+    });
+  },
+
+  checkout(sessionId: string, email: string): Promise<CheckoutResult> {
+    return orderFetch('/orders/checkout', sessionId, {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  },
+
+  getOrder(sessionId: string, orderNumber: string): Promise<OrderView> {
+    return orderFetch(`/orders/${encodeURIComponent(orderNumber)}`, sessionId);
   },
 };
