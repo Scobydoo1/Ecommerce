@@ -1,0 +1,72 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema", "postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("CATALOG_DATABASE_URL")
+  extensions = [pg_trgm, unaccent, vector]
+  schemas    = ["catalog"]
+}
+
+enum ProductStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+
+  @@schema("catalog")
+}
+
+model Category {
+  id        String     @id @default(uuid())
+  name      String
+  slug      String     @unique
+  parentId  String?
+  parent    Category?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children  Category[] @relation("CategoryTree")
+  products  Product[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@index([parentId])
+  @@schema("catalog")
+}
+
+model Product {
+  id          String        @id @default(uuid())
+  sku         String        @unique
+  name        String
+  slug        String        @unique
+  description String?
+  /// Luon la integer cents. Khong bao gio dung float cho tien.
+  priceCents  Int
+  currency    String        @default("VND")
+  stock       Int           @default(0)
+  status      ProductStatus @default(DRAFT)
+  categoryId  String?
+  category    Category?     @relation(fields: [categoryId], references: [id])
+
+  /// Phase 2 se fill bang ai-service. Phase 1 luon NULL (AD-1).
+  embedding Unsupported("vector(1536)")?
+
+  images    ProductImage[]
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@index([categoryId])
+  @@index([status])
+  @@schema("catalog")
+}
+
+model ProductImage {
+  id        String  @id @default(uuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url       String
+  alt       String?
+  position  Int     @default(0)
+
+  @@index([productId])
+  @@schema("catalog")
+}

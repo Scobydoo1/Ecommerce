@@ -1,0 +1,20 @@
+{
+  "name": "e2e",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Playwright — test luong end-to-end toan he thong",
+  "scripts": {
+    "//": "Ten task la `e2e` chu khong phai `test`: `pnpm test` la gate unit test, khong duoc phu thuoc vao mot he thong dang chay.",
+    "e2e": "dotenv -e ../../.env -- playwright test",
+    "e2e:headed": "dotenv -e ../../.env -- playwright test --headed",
+    "install-browsers": "playwright install chromium",
+    "lint": "echo \"e2e: khong lint rieng\"",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.1",
+    "@types/node": "^22.10.2",
+    "dotenv-cli": "^8.0.0",
+    "typescript": "^5.7.2"
+  }
+}

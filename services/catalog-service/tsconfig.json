@@ -1,0 +1,14 @@
+{
+  "extends": "@ecommerce/config/tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "outDir": "./dist",
+    "baseUrl": ".",
+    "declaration": false,
+    "sourceMap": true,
+    "noUnusedLocals": false,
+    "strictPropertyInitialization": false
+  },
+  "include": ["src/**/*", "test/**/*", "prisma/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
+}

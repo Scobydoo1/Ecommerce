@@ -1,0 +1,36 @@
+{
+  "name": "@ecommerce/auth-db",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Prisma client cho schema `auth` (tai khoan khach hang)",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "generated"
+  ],
+  "scripts": {
+    "//build": "KHONG goi `prisma generate` o day: no ghi de query engine DLL, ma file do bi khoa khi dev server dang chay -> `pnpm build` hong. Generate la buoc rieng, giong catalog-service va order-service.",
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint src",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "prisma:generate": "dotenv -e ../../.env -- prisma generate",
+    "prisma:migrate": "dotenv -e ../../.env -- prisma migrate dev",
+    "prisma:deploy": "dotenv -e ../../.env -- prisma migrate deploy",
+    "seed": "dotenv -e ../../.env -- ts-node prisma/seed.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.19.3"
+  },
+  "devDependencies": {
+    "@ecommerce/config": "workspace:*",
+    "@types/bcryptjs": "^3.0.0",
+    "@types/node": "^22.20.1",
+    "bcryptjs": "^3.0.3",
+    "dotenv-cli": "^8.0.0",
+    "eslint": "^9.17.0",
+    "prisma": "^6.19.3",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.2"
+  }
+}

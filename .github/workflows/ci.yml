@@ -1,0 +1,87 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main, master]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Turborepo va Next deu doc bien tu day. Khong co bi mat that nao trong
+  # .env.example - no chi tro toi Postgres/Redis chay trong CI.
+  NODE_VERSION: '20'
+
+jobs:
+  quality:
+    name: Lint, typecheck, unit tests, build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Cac script prisma boc qua `dotenv -e ../../.env`, va .env khong duoc
+      # commit. .env.example du dung cho lint/test vi khong buoc ket noi that.
+      - name: Create .env from example
+        run: cp .env.example .env
+
+      - name: Generate Prisma clients
+        run: |
+          pnpm --filter catalog-service prisma:generate
+          pnpm --filter order-service prisma:generate
+          pnpm --filter @ecommerce/auth-db prisma:generate
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Unit tests
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build
+
+  integration:
+    name: Integration tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Create .env from example
+        run: cp .env.example .env
+
+      - name: Generate Prisma clients
+        run: |
+          pnpm --filter catalog-service prisma:generate
+          pnpm --filter order-service prisma:generate
+          pnpm --filter @ecommerce/auth-db prisma:generate
+
+      # Testcontainers tu dung Postgres pgvector rieng cho moi lan chay, nen
+      # khong khai bao service container o day - xem muc 7 CLAUDE.md.
+      - name: Integration tests
+        run: pnpm test:integration

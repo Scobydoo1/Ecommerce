@@ -1,0 +1,16 @@
+packages:
+  - "apps/*"
+  - "services/*"
+  - "packages/*"
+  - "tests/e2e"
+
+# Chi cho phep postinstall cua Prisma chay (can thiet de tai query engine).
+# Cac goi con lai chi in banner hoac build native optional -> tat cho nhanh va an toan.
+allowBuilds:
+  "@prisma/client": true
+  "@prisma/engines": true
+  prisma: true
+  "@nestjs/core": false
+  cpu-features: false
+  protobufjs: false
+  ssh2: false
