@@ -14,12 +14,11 @@ Hướng dẫn từng bước, dùng **hoàn toàn dịch vụ miễn phí**. L�
 | Redis | **Upstash** | Free, 10.000 lệnh/ngày |
 
 **Đánh đổi bạn cần biết trước:** service free của Render **ngủ sau 15 phút không
-ai truy cập**. Lần bấm đầu tiên sau khi ngủ mất **khoảng 50 giây**. Mục 6 có cách
-giảm nhẹ, nhưng không xoá được hoàn toàn trong giới hạn miễn phí — Render chỉ cho
-750 giờ chạy/tháng cho cả workspace, mà giữ 3 service thức 24/7 cần 2.190 giờ.
+ai truy cập**, lần bấm sau đó mất khoảng 50 giây để thức. Với một demo portfolio
+thì chấp nhận được — chỉ cần ghi rõ cho người xem biết (mục 6).
 
-Nếu sau này chấp nhận trả ~5 $/tháng thì Railway chạy cả 5 thành phần không ngủ,
-dùng đúng bộ biến môi trường ở mục 5.
+Nếu sau này muốn link luôn mở tức thì, Railway (~5 $/tháng) chạy cả 5 thành phần
+không ngủ và dùng đúng bộ biến môi trường ở mục 5, không phải sửa gì trong code.
 
 Tại sao dùng Docker trên Render thay vì build Node thường: repo là monorepo pnpm,
 mỗi service phụ thuộc `packages/` ở gốc. Ba Dockerfile trong repo đã xử lý việc
@@ -206,41 +205,17 @@ terminal và không còn kín nữa.
 
 ---
 
-## 6. Giảm nhẹ chuyện service ngủ
+## 6. Chuyện service ngủ
 
-Render free ngủ sau 15 phút. Bạn có 750 giờ chạy/tháng cho cả workspace, mà giữ
-3 service thức 24/7 cần 2.190 giờ — nên **không thể giữ thức cả tháng**.
+Render free ngủ sau 15 phút không ai truy cập, lần bấm sau đó mất khoảng 50 giây
+để thức dậy. Cứ để vậy — không cần làm gì thêm, và hạn mức 750 giờ/tháng thừa
+sức cho một demo thỉnh thoảng có người xem.
 
-Cách dùng hết ngân sách đó cho hợp lý: chỉ đánh thức trong giờ người ta hay xem
-CV. Thêm file `.github/workflows/keep-warm.yml`:
+Việc duy nhất nên làm là **ghi rõ điều đó cạnh link trong portfolio**. Người xem
+biết trước sẽ chờ; không biết thì họ tưởng trang hỏng và đóng tab:
 
-```yaml
-name: Keep demo warm
-
-on:
-  schedule:
-    # 9h-18h giờ Việt Nam (UTC+7) = 2h-11h UTC, các ngày trong tuần.
-    - cron: '*/10 2-11 * * 1-5'
-  workflow_dispatch:
-
-jobs:
-  ping:
-    runs-on: ubuntu-latest
-    steps:
-      - run: |
-          curl -sS -o /dev/null -w 'catalog %{http_code}\n' https://chongoc-catalog.onrender.com/health
-          curl -sS -o /dev/null -w 'order %{http_code}\n' https://chongoc-order.onrender.com/health
-          curl -sS -o /dev/null -w 'storefront %{http_code}\n' https://chongoc-storefront.onrender.com/
-```
-
-Tính ra: 9 giờ × 22 ngày × 3 service ≈ 594 giờ, nằm dưới hạn mức 750.
-
-Ngoài khung giờ đó, lần bấm đầu vẫn mất ~50 giây. **Hãy ghi thẳng điều này cạnh
-link trong portfolio** — người xem biết trước sẽ chờ; không biết thì họ tưởng
-trang hỏng và đóng tab:
-
-> Demo chạy trên hạ tầng miễn phí, lần truy cập đầu tiên có thể mất ~50 giây để
-> server khởi động.
+> Demo chạy trên hạ tầng miễn phí. Lần truy cập đầu tiên có thể mất khoảng 50
+> giây để server khởi động, những lần sau sẽ nhanh.
 
 ---
 
