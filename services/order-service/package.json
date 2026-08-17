@@ -10,7 +10,7 @@
     "lint": "eslint .",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "jest --config jest.config.ts",
-    "prisma:generate": "dotenv -e ../../.env -- prisma generate",
+    "prisma:generate": "prisma generate",
     "prisma:migrate": "dotenv -e ../../.env -- prisma migrate dev",
     "prisma:deploy": "dotenv -e ../../.env -- prisma migrate deploy"
   },

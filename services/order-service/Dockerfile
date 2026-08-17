@@ -9,7 +9,6 @@ WORKDIR /repo
 
 FROM base AS build
 COPY . .
-COPY .env.example .env
 RUN pnpm install --frozen-lockfile
 RUN pnpm --filter order-service prisma:generate
 # Qua turbo: `@ecommerce/types` phai duoc bien dich truoc.

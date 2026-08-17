@@ -10,9 +10,6 @@ WORKDIR /repo
 
 FROM base AS build
 COPY . .
-# .env.example khong chua bi mat nao (moi gia tri nhay cam deu de rong). Can no
-# vi cac script prisma boc qua `dotenv -e ../../.env` va se loi neu thieu file.
-COPY .env.example .env
 RUN pnpm install --frozen-lockfile
 RUN pnpm --filter catalog-service prisma:generate
 # Qua turbo chu khong goi thang script cua package: `@ecommerce/types` phai duoc

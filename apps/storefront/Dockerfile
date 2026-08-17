@@ -9,7 +9,6 @@ WORKDIR /repo
 
 FROM base AS build
 COPY . .
-COPY .env.example .env
 RUN pnpm install --frozen-lockfile
 # auth-db phai duoc generate VA build truoc: storefront import ban da bien dich
 # (`dist/`) cua no, va webpack danh dau goi nay la external.

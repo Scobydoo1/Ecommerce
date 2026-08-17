@@ -1,52 +1,38 @@
-# Deploy để demo trên portfolio
+# Deploy miễn phí để demo trên portfolio
 
-Mục tiêu: một đường link mở ra là chạy, người xem bấm vào không phải chờ.
+Hướng dẫn từng bước, dùng **hoàn toàn dịch vụ miễn phí**. Làm tuần tự từ mục 1
+đến mục 7, khoảng 45–60 phút cho lần đầu.
 
 ---
 
-## 1. Chọn nền tảng
+## 1. Stack và điều bạn phải chấp nhận
 
-Dự án cần **3 tiến trình Node chạy liên tục + Postgres + Redis**. Điều đó loại
-phần lớn lựa chọn "serverless miễn phí": storefront là SSR động, hai service
-NestJS là server thường trú.
-
-| | Railway | Vercel + Neon + Upstash + Render |
+| Thành phần | Dịch vụ | Gói |
 |---|---|---|
-| Chi phí | ~5 $/tháng | 0 đ |
-| Người xem bấm link | mở ngay | **chờ ~50 giây** (Render free ngủ sau 15 phút) |
-| Số nơi phải cấu hình | 1 | 4 |
-| Postgres có `pgvector` | có | Neon có |
-| Redis | add-on sẵn | Upstash |
+| storefront, catalog-service, order-service | **Render** (Docker) | Free |
+| PostgreSQL 16 + pgvector | **Neon** | Free, 0,5 GB |
+| Redis | **Upstash** | Free, 10.000 lệnh/ngày |
 
-**Khuyến nghị: Railway.** Với portfolio, 5 $ đổi lấy việc link luôn mở tức thì là
-đáng — người xem không chờ 50 giây, họ đóng tab. Phần còn lại của tài liệu này
-theo Railway; các nền tảng khác dùng cùng bộ biến môi trường.
+**Đánh đổi bạn cần biết trước:** service free của Render **ngủ sau 15 phút không
+ai truy cập**. Lần bấm đầu tiên sau khi ngủ mất **khoảng 50 giây**. Mục 6 có cách
+giảm nhẹ, nhưng không xoá được hoàn toàn trong giới hạn miễn phí — Render chỉ cho
+750 giờ chạy/tháng cho cả workspace, mà giữ 3 service thức 24/7 cần 2.190 giờ.
 
----
+Nếu sau này chấp nhận trả ~5 $/tháng thì Railway chạy cả 5 thành phần không ngủ,
+dùng đúng bộ biến môi trường ở mục 5.
 
-## 2. Chuẩn bị (đã làm sẵn trong repo)
-
-Ba việc dưới đây đã xong, ghi lại để bạn biết vì sao chúng cần thiết:
-
-- **`immutable_unaccent`** thay cho `ALTER FUNCTION unaccent(text) IMMUTABLE`.
-  Lệnh cũ đòi quyền superuser và **bị từ chối trên mọi Postgres quản lý** —
-  đã kiểm chứng: `ERROR: must be owner of function unaccent`.
-- **`SET search_path TO catalog, public`** ở đầu migration. Postgres quản lý cài
-  sẵn extension ở `public`, mà Prisma đặt `search_path` chỉ gồm `catalog`, nên
-  `vector(1536)` không resolve được — đã kiểm chứng: `type "vector" does not exist`.
-- **Dockerfile cho cả ba service** (`apps/storefront`, `services/catalog-service`,
-  `services/order-service`), build từ **gốc monorepo**. Cả ba đã build và chạy
-  thật, e2e xanh trên bộ container.
+Tại sao dùng Docker trên Render thay vì build Node thường: repo là monorepo pnpm,
+mỗi service phụ thuộc `packages/` ở gốc. Ba Dockerfile trong repo đã xử lý việc
+đó và **đã được build, chạy thật, e2e xanh trên bộ container**.
 
 ---
 
-## 3. Các bước trên Railway
+## 2. Tạo database trên Neon
 
-### 3.1 Tạo hạ tầng dữ liệu
-
-1. Tạo project mới → **New → Database → PostgreSQL**.
-2. Trong project đó → **New → Database → Redis**.
-3. Mở Postgres → tab **Data** hoặc **Query**, chạy một lần:
+1. Vào **neon.tech** → đăng ký bằng tài khoản GitHub → **Create project**.
+2. Đặt tên project, chọn **Postgres 16**, chọn region gần bạn nhất
+   (Singapore nếu ở Việt Nam).
+3. Sau khi tạo xong, vào tab **SQL Editor** và chạy nguyên khối này:
 
 ```sql
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
@@ -59,129 +45,258 @@ CREATE SCHEMA IF NOT EXISTS auth;
 ```
 
 File [`infra/docker/postgres/init.sql`](../infra/docker/postgres/init.sql) chỉ
-chạy cho container dev, Postgres quản lý không đọc nó — nên bước này phải làm tay.
+chạy cho container dev ở máy bạn; Neon không đọc nó nên bước này **bắt buộc làm tay**.
 
-### 3.2 Tạo ba service từ cùng một repo
+4. Vào **Dashboard → Connection string**, chọn dạng **psql / URI**, copy chuỗi.
+   Nó trông như thế này:
 
-Với mỗi service: **New → GitHub Repo → chọn repo này**, rồi vào Settings:
+```
+postgresql://ten_user:mat_khau@ep-abc-123.ap-southeast-1.aws.neon.tech/neondb?sslmode=require
+```
 
-| Service | Dockerfile Path | Cổng |
+Giữ chuỗi này lại, mục 5 sẽ dùng. Gọi nó là `<NEON_URL>`.
+
+---
+
+## 3. Tạo Redis trên Upstash
+
+1. Vào **upstash.com** → đăng ký → **Create Database** → chọn **Redis**.
+2. Chọn region gần bạn, gói **Free**.
+3. Vào tab **Details**, tìm mục **Endpoints**, copy chuỗi dạng
+   `rediss://default:<mat_khau>@<host>.upstash.io:6379`.
+
+Lưu ý chữ **`rediss://`** hai chữ `s` — đó là bản có TLS, bắt buộc với Upstash.
+Thư viện `ioredis` tự bật TLS khi thấy tiền tố này.
+
+Giữ chuỗi này lại, gọi là `<UPSTASH_URL>`.
+
+---
+
+## 4. Nạp schema và dữ liệu — chạy từ máy bạn
+
+Render free **không cho mở shell**, nên migration và seed phải chạy từ máy bạn
+trỏ thẳng vào Neon. Neon mở ra Internet nên việc này làm được.
+
+Mở terminal ở thư mục dự án:
+
+```bash
+# Thay <NEON_URL> bằng chuỗi lấy ở mục 2. Chú ý phần ?schema=... ở cuối:
+# ba service dùng chung một database nhưng ba schema riêng, thiếu đuôi này là
+# cả ba ghi đè lên nhau.
+
+CATALOG_DATABASE_URL="<NEON_URL>&schema=catalog" \
+  pnpm --filter catalog-service exec prisma migrate deploy
+
+ORDER_DATABASE_URL="<NEON_URL>&schema=orders" \
+  pnpm --filter order-service exec prisma migrate deploy
+
+AUTH_DATABASE_URL="<NEON_URL>&schema=auth" \
+  pnpm --filter @ecommerce/auth-db exec prisma migrate deploy
+```
+
+Chuỗi Neon đã có sẵn `?sslmode=require` nên nối thêm bằng **`&schema=`**, không
+phải `?schema=`.
+
+Nạp dữ liệu mẫu:
+
+```bash
+CATALOG_DATABASE_URL="<NEON_URL>&schema=catalog" \
+  pnpm --filter catalog-service exec ts-node prisma/seed.ts
+
+AUTH_DATABASE_URL="<NEON_URL>&schema=auth" \
+  pnpm --filter @ecommerce/auth-db exec ts-node prisma/seed.ts
+```
+
+Dữ liệu mẫu có sẵn trong repo:
+
+| Thứ | Số lượng | Chi tiết |
 |---|---|---|
-| catalog | `services/catalog-service/Dockerfile` | 3001 |
-| order | `services/order-service/Dockerfile` | 3002 |
-| storefront | `apps/storefront/Dockerfile` | 3000 |
+| Danh mục | 6 | Thời trang nam/nữ, Đồ điện tử, Giày dép, Nhà cửa, Sách & VPP |
+| Sản phẩm | 42 | Tên tiếng Việt có dấu, mô tả thật, giá và tồn kho khác nhau |
+| — đang bán | 40 | trong đó **4 món hết hàng** để thấy nhãn "Hết hàng" |
+| — ẩn | 2 | 1 DRAFT + 1 ARCHIVED, chứng minh bộ lọc trạng thái hoạt động |
+| Tài khoản | 3 | `demo@chongoc.vn` / `demo12345` và hai tài khoản nữa |
 
-**Root Directory để trống** — Dockerfile được viết để build từ gốc monorepo, vì
-mỗi service phụ thuộc `packages/` và `pnpm-lock.yaml` ở gốc.
-
-### 3.3 Chạy migration và seed một lần
-
-Sau khi ba service lên, mở shell của service catalog (Railway có nút
-**Connect → Shell**) rồi chạy:
+Kiểm tra ngay rằng dữ liệu đã vào:
 
 ```bash
-pnpm --filter catalog-service prisma:deploy
-pnpm --filter order-service prisma:deploy
-pnpm --filter @ecommerce/auth-db prisma:deploy
-
-pnpm --filter catalog-service seed
-pnpm --filter @ecommerce/auth-db seed
-```
-
-Không có shell thì tạm đổi lệnh khởi động thành `... prisma:deploy && node dist/main`
-cho lần deploy đầu, xong đổi lại.
-
----
-
-## 4. Biến môi trường — lấy giá trị ở đâu
-
-### catalog-service
-
-| Biến | Lấy ở đâu |
-|---|---|
-| `CATALOG_DATABASE_URL` | Railway Postgres → tab **Variables** → copy `DATABASE_URL`, **thêm đuôi** `?schema=catalog` |
-| `AUTH_URL` | URL công khai của service storefront, ví dụ `https://storefront-production-xxxx.up.railway.app` |
-| `CATALOG_SERVICE_PORT` | `3001` |
-
-### order-service
-
-| Biến | Lấy ở đâu |
-|---|---|
-| `ORDER_DATABASE_URL` | Cùng `DATABASE_URL` đó, đuôi `?schema=orders` |
-| `REDIS_URL` | Railway Redis → **Variables** → copy `REDIS_URL` |
-| `CATALOG_API_URL` | Địa chỉ nội bộ của catalog: Railway cho biến `${{catalog.RAILWAY_PRIVATE_DOMAIN}}`, dùng `http://${{catalog.RAILWAY_PRIVATE_DOMAIN}}:3001` |
-| `AUTH_URL` | Giống hệt của catalog |
-| `ORDER_SERVICE_PORT` | `3002` |
-| `STRIPE_SECRET_KEY` | dashboard.stripe.com → **Developers → API keys** → *Secret key* ở chế độ **Test mode**. Bắt đầu bằng `sk_test_` |
-| `STRIPE_WEBHOOK_SECRET` | dashboard.stripe.com → **Developers → Webhooks** → *Add endpoint* trỏ tới `https://<order-url>/payments/stripe/webhook`, chọn sự kiện `payment_intent.succeeded` và `payment_intent.payment_failed` → copy **Signing secret**, bắt đầu bằng `whsec_` |
-
-### storefront
-
-| Biến | Lấy ở đâu |
-|---|---|
-| `NEXT_PUBLIC_CATALOG_API_URL` | `http://${{catalog.RAILWAY_PRIVATE_DOMAIN}}:3001` |
-| `NEXT_PUBLIC_ORDER_API_URL` | `http://${{order.RAILWAY_PRIVATE_DOMAIN}}:3002` |
-| `AUTH_DATABASE_URL` | Cùng `DATABASE_URL` đó, đuôi `?schema=auth` |
-| `AUTH_URL` | Chính URL công khai của storefront |
-| `AUTH_SECRET` | Tự sinh: `openssl rand -base64 32` (hoặc `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`). **Không dùng lại giá trị trong `.env` ở máy bạn** |
-| `PORT` | `3000` |
-
-Ba lưu ý dễ sai:
-
-- **`AUTH_URL` phải giống hệt nhau ở cả ba service** và bằng đúng domain
-  storefront. Hai service NestJS dùng nó làm origin CORS; lệch một ký tự, kể cả
-  dấu `/` thừa ở cuối, là trình duyệt chặn.
-- **`NEXT_PUBLIC_*` ở đây thực ra chỉ dùng phía server** (route handler và server
-  component), nên điền địa chỉ **nội bộ** của service là đúng. Tên biến mang tiền
-  tố `NEXT_PUBLIC_` là do quy ước cũ, không có nghĩa trình duyệt gọi thẳng.
-- **Đuôi `?schema=...` là bắt buộc.** Ba service dùng chung một database nhưng ba
-  schema riêng; thiếu đuôi thì cả ba ghi đè lên nhau ở `public`.
-
-### Biến chưa cần cho Phase 1
-
-`LLM_PROVIDER`, `LLM_API_KEY`, `EMBEDDING_MODEL` (Phase 2), `MEILISEARCH_*`
-(chỉ thêm khi đo thấy `pg_trgm` chậm), `SENTRY_DSN`, `POSTHOG_KEY`
-(chưa nối vào code).
-
----
-
-## 5. Kiểm chứng sau khi deploy
-
-```bash
-curl https://<catalog-url>/health
-curl https://<order-url>/health
-curl "https://<catalog-url>/search?q=ao+thunn"      # phải ra "Áo thun nam cotton"
-```
-
-Rồi mở storefront và đi hết một vòng: gõ sai chính tả → mở sản phẩm → thêm giỏ →
-thanh toán bằng thẻ test `4242 4242 4242 4242` → xem trang xác nhận.
-
-Chạy được cả bộ e2e trên môi trường đã deploy:
-
-```bash
-E2E_BASE_URL=https://<storefront-url> pnpm --filter e2e exec playwright test
+CATALOG_DATABASE_URL="<NEON_URL>&schema=catalog" \
+  pnpm --filter catalog-service exec prisma studio
 ```
 
 ---
 
-## 6. Nên làm trước khi đưa link vào portfolio
+## 5. Tạo ba service trên Render
 
-- **Đặt lại seed theo lịch** (Railway có cron): khách vọc xong dữ liệu sẽ lộn xộn.
-- **Chặn lập chỉ mục**: thêm `robots.txt` chặn, để demo không lẫn vào kết quả tìm
-  kiếm như một cửa hàng thật.
-- **Siết rate limit**: hiện 60 lần/phút cho `/search`, 120 cho `/suggest`.
-- **Ghi rõ đây là demo** ở footer, kèm tài khoản dùng thử `demo@chongoc.vn` /
-  `demo12345` để người xem đăng nhập ngay được.
-- **Nối Sentry** (`SENTRY_DSN` đã có sẵn trong `.env.example` nhưng chưa nối vào
-  code) để biết khi demo hỏng.
+Vào **render.com** → đăng ký bằng GitHub → cho phép truy cập repo `Ecommerce`.
 
-## 7. Điểm còn yếu, nên biết trước khi bị hỏi
+Với **mỗi** service: **New → Web Service → Build and deploy from a Git
+repository** → chọn repo. Rồi điền theo bảng:
 
-Người xem kỹ tính sẽ tìm ra, nên tốt hơn là bạn nói trước:
+| | catalog | order | storefront |
+|---|---|---|---|
+| Name | `chongoc-catalog` | `chongoc-order` | `chongoc-storefront` |
+| Language | **Docker** | **Docker** | **Docker** |
+| Dockerfile Path | `services/catalog-service/Dockerfile` | `services/order-service/Dockerfile` | `apps/storefront/Dockerfile` |
+| Docker Build Context Directory | `.` | `.` | `.` |
+| Instance Type | Free | Free | Free |
 
-- **Image Docker khoảng 1,4 GB** vì copy cả cây monorepo đã build. Đổi lại là
-  không phải đoán chỗ nằm của Prisma query engine và các symlink pnpm. Giảm được
-  bằng `pnpm deploy --filter` nhưng cần thêm công.
-- **Chưa trừ tồn kho khi đặt hàng**, mới chỉ kiểm tra — xem
-  [roadmap-to-completion.md](roadmap-to-completion.md) mục 1.2.
-- **`GET /orders/:orderNumber` chưa kiểm quyền**: ai biết mã đơn đều xem được.
+**Docker Build Context phải là `.` (gốc repo)**, không phải thư mục service —
+Dockerfile được viết để build từ gốc vì mỗi service cần `packages/` và
+`pnpm-lock.yaml` ở đó.
+
+**Không cần đặt cổng.** Render tiêm biến `PORT` và cả ba service đã được sửa để
+ưu tiên đọc biến đó.
+
+### Thứ tự tạo
+
+Tạo **catalog trước**, đợi nó deploy xong và copy URL công khai
+(dạng `https://chongoc-catalog.onrender.com`), rồi mới tạo order và storefront —
+vì hai cái sau cần URL của catalog.
+
+### Biến môi trường — điền vào tab Environment của từng service
+
+**chongoc-catalog**
+
+| Biến | Giá trị | Lấy ở đâu |
+|---|---|---|
+| `CATALOG_DATABASE_URL` | `<NEON_URL>&schema=catalog` | Mục 2 |
+| `AUTH_URL` | `https://chongoc-storefront.onrender.com` | URL storefront (đoán trước theo tên bạn đặt, hoặc quay lại điền sau) |
+
+**chongoc-order**
+
+| Biến | Giá trị | Lấy ở đâu |
+|---|---|---|
+| `ORDER_DATABASE_URL` | `<NEON_URL>&schema=orders` | Mục 2 |
+| `REDIS_URL` | `<UPSTASH_URL>` | Mục 3 |
+| `CATALOG_API_URL` | `https://chongoc-catalog.onrender.com` | URL service catalog |
+| `AUTH_URL` | `https://chongoc-storefront.onrender.com` | Giống hệt của catalog |
+| `STRIPE_SECRET_KEY` | *(để trống lúc đầu)* | Mục 7 |
+| `STRIPE_WEBHOOK_SECRET` | *(để trống lúc đầu)* | Mục 7 |
+
+**chongoc-storefront**
+
+| Biến | Giá trị | Lấy ở đâu |
+|---|---|---|
+| `NEXT_PUBLIC_CATALOG_API_URL` | `https://chongoc-catalog.onrender.com` | URL service catalog |
+| `NEXT_PUBLIC_ORDER_API_URL` | `https://chongoc-order.onrender.com` | URL service order |
+| `AUTH_DATABASE_URL` | `<NEON_URL>&schema=auth` | Mục 2 |
+| `AUTH_URL` | `https://chongoc-storefront.onrender.com` | Chính URL của nó |
+| `AUTH_SECRET` | chuỗi ngẫu nhiên 32 byte | Sinh bằng lệnh dưới |
+
+Sinh `AUTH_SECRET`:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+```
+
+**Đừng dùng lại giá trị đang có trong `.env` ở máy bạn** — nó đã nằm trong log
+terminal và không còn kín nữa.
+
+### Ba chỗ dễ sai nhất
+
+1. **`AUTH_URL` phải giống hệt nhau ở cả ba service**, và bằng đúng domain
+   storefront. Hai service NestJS dùng nó làm origin CORS. Thừa một dấu `/` ở
+   cuối là trình duyệt chặn hết, mà thông báo lỗi sẽ rất khó hiểu.
+2. **Đuôi `&schema=...` không được thiếu.** Thiếu là ba service cùng ghi vào
+   `public` và giẫm lên nhau.
+3. **`NEXT_PUBLIC_*` ở dự án này thực ra chỉ dùng phía server** (route handler và
+   server component), nên điền URL công khai của service là đúng. Tiền tố
+   `NEXT_PUBLIC_` chỉ là tên biến, không có nghĩa trình duyệt gọi thẳng.
+
+---
+
+## 6. Giảm nhẹ chuyện service ngủ
+
+Render free ngủ sau 15 phút. Bạn có 750 giờ chạy/tháng cho cả workspace, mà giữ
+3 service thức 24/7 cần 2.190 giờ — nên **không thể giữ thức cả tháng**.
+
+Cách dùng hết ngân sách đó cho hợp lý: chỉ đánh thức trong giờ người ta hay xem
+CV. Thêm file `.github/workflows/keep-warm.yml`:
+
+```yaml
+name: Keep demo warm
+
+on:
+  schedule:
+    # 9h-18h giờ Việt Nam (UTC+7) = 2h-11h UTC, các ngày trong tuần.
+    - cron: '*/10 2-11 * * 1-5'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          curl -sS -o /dev/null -w 'catalog %{http_code}\n' https://chongoc-catalog.onrender.com/health
+          curl -sS -o /dev/null -w 'order %{http_code}\n' https://chongoc-order.onrender.com/health
+          curl -sS -o /dev/null -w 'storefront %{http_code}\n' https://chongoc-storefront.onrender.com/
+```
+
+Tính ra: 9 giờ × 22 ngày × 3 service ≈ 594 giờ, nằm dưới hạn mức 750.
+
+Ngoài khung giờ đó, lần bấm đầu vẫn mất ~50 giây. **Hãy ghi thẳng điều này cạnh
+link trong portfolio** — người xem biết trước sẽ chờ; không biết thì họ tưởng
+trang hỏng và đóng tab:
+
+> Demo chạy trên hạ tầng miễn phí, lần truy cập đầu tiên có thể mất ~50 giây để
+> server khởi động.
+
+---
+
+## 7. Bật thanh toán Stripe (tuỳ chọn)
+
+Thiếu khoá Stripe thì đơn hàng vẫn tạo được và dừng ở trạng thái `PENDING` —
+luồng mua hàng chạy trọn, chỉ không có bước quẹt thẻ.
+
+Muốn bật đầy đủ:
+
+1. Vào **dashboard.stripe.com**, bật **Test mode** (công tắc góc phải trên).
+2. **Developers → API keys** → copy **Secret key** (bắt đầu bằng `sk_test_`) →
+   điền vào `STRIPE_SECRET_KEY` của service order.
+3. **Developers → Webhooks → Add endpoint**:
+   - URL: `https://chongoc-order.onrender.com/payments/stripe/webhook`
+   - Events: `payment_intent.succeeded` và `payment_intent.payment_failed`
+4. Copy **Signing secret** (bắt đầu bằng `whsec_`) → điền vào
+   `STRIPE_WEBHOOK_SECRET`.
+
+Phần giao diện quẹt thẻ **chưa được viết** — xem
+[roadmap-to-completion.md](roadmap-to-completion.md) mục 1.1.
+
+---
+
+## 8. Kiểm chứng sau khi deploy
+
+```bash
+curl https://chongoc-catalog.onrender.com/health
+curl https://chongoc-order.onrender.com/health
+
+# Gõ sai chính tả vẫn phải ra đúng sản phẩm:
+curl "https://chongoc-catalog.onrender.com/search?q=ao+thunn"
+```
+
+Lần đầu chạy có thể mất ~50 giây vì service đang ngủ. Nếu trả về
+`Áo thun nam cotton` là toàn bộ chuỗi storefront → catalog → Neon đã thông.
+
+Rồi mở storefront và đi hết một vòng: gõ `ao thunn` → mở sản phẩm → thêm giỏ →
+thanh toán → xem trang xác nhận. Đăng nhập thử bằng `demo@chongoc.vn` / `demo12345`.
+
+Chạy được cả bộ e2e trên môi trường thật:
+
+```bash
+E2E_BASE_URL=https://chongoc-storefront.onrender.com \
+  pnpm --filter e2e exec playwright test
+```
+
+---
+
+## 9. Trước khi đưa link vào portfolio
+
+- **Ghi rõ đây là demo** và cảnh báo 50 giây khởi động, kèm tài khoản dùng thử.
+- **Đặt lại seed định kỳ**: khách vọc xong dữ liệu sẽ lộn xộn. Chạy lại hai lệnh
+  seed ở mục 4 khi cần — chúng dùng `upsert` nên chạy nhiều lần vẫn an toàn.
+- **Chèn ảnh chụp màn hình vào README**: nhiều người xem ảnh rồi mới quyết định
+  có bấm link hay không.
+- **Điểm yếu nên biết trước khi bị hỏi:** chưa trừ tồn kho khi đặt hàng, và
+  `GET /orders/:orderNumber` chưa kiểm quyền. Cả hai ghi trong
+  [roadmap-to-completion.md](roadmap-to-completion.md).

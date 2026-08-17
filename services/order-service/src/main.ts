@@ -23,7 +23,8 @@ async function bootstrap(): Promise<void> {
     credentials: true,
   });
 
-  const port = Number(process.env.ORDER_SERVICE_PORT ?? 3002);
+  // `PORT` truoc tien - xem ghi chu trong catalog-service/src/main.ts.
+  const port = Number(process.env.PORT ?? process.env.ORDER_SERVICE_PORT ?? 3002);
   await app.listen(port);
   new Logger('Bootstrap').log(`order-service dang lang nghe tren cong ${port}`);
 }
