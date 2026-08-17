@@ -46,14 +46,22 @@ CREATE SCHEMA IF NOT EXISTS auth;
 File [`infra/docker/postgres/init.sql`](../infra/docker/postgres/init.sql) chỉ
 chạy cho container dev ở máy bạn; Neon không đọc nó nên bước này **bắt buộc làm tay**.
 
-4. Vào **Dashboard → Connection string**, chọn dạng **psql / URI**, copy chuỗi.
-   Nó trông như thế này:
+4. Vào **Dashboard → Connection string**, copy chuỗi. Neon cho hai dạng và
+   **bạn cần cả hai**:
 
 ```
-postgresql://ten_user:mat_khau@ep-abc-123.ap-southeast-1.aws.neon.tech/neondb?sslmode=require
+# Co chu "-pooler": dung luc CHAY (qua PgBouncer, chiu duoc nhieu ket noi)
+postgresql://user:pass@ep-abc-123-pooler.c-2.aws.neon.tech/neondb?sslmode=require
+
+# Bo chu "-pooler": dung luc CHAY MIGRATION
+postgresql://user:pass@ep-abc-123.c-2.aws.neon.tech/neondb?sslmode=require
 ```
 
-Giữ chuỗi này lại, mục 5 sẽ dùng. Gọi nó là `<NEON_URL>`.
+Gọi chúng là `<NEON_POOLED>` và `<NEON_DIRECT>`.
+
+**Vì sao phải tách:** PgBouncer chạy ở chế độ transaction pooling, mỗi truy vấn
+có thể rơi vào một kết nối backend khác nhau nên thiết lập cấp phiên không giữ
+được. Prisma migrate cần phiên ổn định, nên migration phải đi đường trực tiếp.
 
 ---
 
@@ -79,17 +87,17 @@ trỏ thẳng vào Neon. Neon mở ra Internet nên việc này làm được.
 Mở terminal ở thư mục dự án:
 
 ```bash
-# Thay <NEON_URL> bằng chuỗi lấy ở mục 2. Chú ý phần ?schema=... ở cuối:
+# Dung ban TRUC TIEP (khong co "-pooler"). Chu y duoi ?schema=... : Chú ý phần ?schema=... ở cuối:
 # ba service dùng chung một database nhưng ba schema riêng, thiếu đuôi này là
 # cả ba ghi đè lên nhau.
 
-CATALOG_DATABASE_URL="<NEON_URL>&schema=catalog" \
+CATALOG_DATABASE_URL="<NEON_DIRECT>&schema=catalog" \
   pnpm --filter catalog-service exec prisma migrate deploy
 
-ORDER_DATABASE_URL="<NEON_URL>&schema=orders" \
+ORDER_DATABASE_URL="<NEON_DIRECT>&schema=orders" \
   pnpm --filter order-service exec prisma migrate deploy
 
-AUTH_DATABASE_URL="<NEON_URL>&schema=auth" \
+AUTH_DATABASE_URL="<NEON_DIRECT>&schema=auth" \
   pnpm --filter @ecommerce/auth-db exec prisma migrate deploy
 ```
 
@@ -99,10 +107,10 @@ phải `?schema=`.
 Nạp dữ liệu mẫu:
 
 ```bash
-CATALOG_DATABASE_URL="<NEON_URL>&schema=catalog" \
+CATALOG_DATABASE_URL="<NEON_DIRECT>&schema=catalog" \
   pnpm --filter catalog-service exec ts-node prisma/seed.ts
 
-AUTH_DATABASE_URL="<NEON_URL>&schema=auth" \
+AUTH_DATABASE_URL="<NEON_DIRECT>&schema=auth" \
   pnpm --filter @ecommerce/auth-db exec ts-node prisma/seed.ts
 ```
 
@@ -119,7 +127,7 @@ Dữ liệu mẫu có sẵn trong repo:
 Kiểm tra ngay rằng dữ liệu đã vào:
 
 ```bash
-CATALOG_DATABASE_URL="<NEON_URL>&schema=catalog" \
+CATALOG_DATABASE_URL="<NEON_DIRECT>&schema=catalog" \
   pnpm --filter catalog-service exec prisma studio
 ```
 
@@ -159,14 +167,14 @@ vì hai cái sau cần URL của catalog.
 
 | Biến | Giá trị | Lấy ở đâu |
 |---|---|---|
-| `CATALOG_DATABASE_URL` | `<NEON_URL>&schema=catalog` | Mục 2 |
+| `CATALOG_DATABASE_URL` | `<NEON_POOLED>&schema=catalog` | Mục 2 — bản **có** `-pooler` |
 | `AUTH_URL` | `https://chongoc-storefront.onrender.com` | URL storefront (đoán trước theo tên bạn đặt, hoặc quay lại điền sau) |
 
 **chongoc-order**
 
 | Biến | Giá trị | Lấy ở đâu |
 |---|---|---|
-| `ORDER_DATABASE_URL` | `<NEON_URL>&schema=orders` | Mục 2 |
+| `ORDER_DATABASE_URL` | `<NEON_POOLED>&schema=orders` | Mục 2 — bản **có** `-pooler` |
 | `REDIS_URL` | `<UPSTASH_URL>` | Mục 3 |
 | `CATALOG_API_URL` | `https://chongoc-catalog.onrender.com` | URL service catalog |
 | `AUTH_URL` | `https://chongoc-storefront.onrender.com` | Giống hệt của catalog |
@@ -179,7 +187,7 @@ vì hai cái sau cần URL của catalog.
 |---|---|---|
 | `NEXT_PUBLIC_CATALOG_API_URL` | `https://chongoc-catalog.onrender.com` | URL service catalog |
 | `NEXT_PUBLIC_ORDER_API_URL` | `https://chongoc-order.onrender.com` | URL service order |
-| `AUTH_DATABASE_URL` | `<NEON_URL>&schema=auth` | Mục 2 |
+| `AUTH_DATABASE_URL` | `<NEON_POOLED>&schema=auth` | Mục 2 — bản **có** `-pooler` |
 | `AUTH_URL` | `https://chongoc-storefront.onrender.com` | Chính URL của nó |
 | `AUTH_SECRET` | chuỗi ngẫu nhiên 32 byte | Sinh bằng lệnh dưới |
 

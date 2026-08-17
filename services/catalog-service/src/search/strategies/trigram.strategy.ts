@@ -25,6 +25,21 @@ const WORD_SIMILARITY_THRESHOLD = 0.45;
  */
 const DESCRIPTION_WEIGHT = 0.6;
 
+/**
+ * SQL tho PHAI ghi ro schema, khong duoc dua vao `search_path`.
+ *
+ * Prisma dat `search_path` mot lan luc ket noi. Qua PgBouncer o che do
+ * transaction pooling (Neon, Supabase, PgBouncer noi chung), moi truy van co
+ * the roi vao mot ket noi backend khac nen thiet lap cap phien do khong con
+ * hieu luc -> `relation "Product" does not exist` (42P01).
+ *
+ * Cac truy van Prisma tu sinh (findMany...) khong dinh loi nay vi chung da kem
+ * san schema; chi SQL viet tay moi phai tu lo. Da do that tren Neon: `/products`
+ * chay binh thuong trong khi `/search` tra 500.
+ *
+ * Ten schema co dinh trong `schema.prisma` (`schemas = ["catalog"]`) nen ghi
+ * thang vao cau lenh.
+ */
 interface TrigramRow {
   id: string;
   score: number;
@@ -33,7 +48,7 @@ interface TrigramRow {
 /**
  * Fuzzy search dua tren `pg_trgm`.
  *
- * So sanh tren `lower(immutable_unaccent(...))` de go thieu dau hoac sai hoa
+ * So sanh tren `lower("catalog".immutable_unaccent(...))` de go thieu dau hoac sai hoa
  * thuong van khop. `immutable_unaccent` la ham boc do migration tao ra - xem
  * ghi chu trong migration ve ly do khong dung thang `unaccent`.
  *
@@ -67,17 +82,17 @@ export class TrigramStrategy implements SearchStrategy {
     return Prisma.sql`
       SELECT p."id",
              GREATEST(
-               word_similarity(${normalizedQuery}, lower(immutable_unaccent(p."name"))),
-               word_similarity(${normalizedQuery}, lower(immutable_unaccent(coalesce(p."description", ''))))
+               word_similarity(${normalizedQuery}, lower("catalog".immutable_unaccent(p."name"))),
+               word_similarity(${normalizedQuery}, lower("catalog".immutable_unaccent(coalesce(p."description", ''))))
                  * ${DESCRIPTION_WEIGHT}
              ) AS score
-      FROM "Product" p
+      FROM "catalog"."Product" p
       WHERE p."status" = 'ACTIVE'
       ${categoryFilter}
       AND (
-        word_similarity(${normalizedQuery}, lower(immutable_unaccent(p."name")))
+        word_similarity(${normalizedQuery}, lower("catalog".immutable_unaccent(p."name")))
           > ${WORD_SIMILARITY_THRESHOLD}
-        OR word_similarity(${normalizedQuery}, lower(immutable_unaccent(coalesce(p."description", ''))))
+        OR word_similarity(${normalizedQuery}, lower("catalog".immutable_unaccent(coalesce(p."description", ''))))
              * ${DESCRIPTION_WEIGHT} > ${WORD_SIMILARITY_THRESHOLD}
       )
       ORDER BY score DESC, p."name" ASC

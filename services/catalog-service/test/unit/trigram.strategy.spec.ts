@@ -23,7 +23,20 @@ describe('TrigramStrategy.buildQuery', () => {
   it('compares on lower(immutable_unaccent(...)) so diacritics and case do not matter', () => {
     // `immutable_unaccent` chu khong phai `unaccent`: xem migration init - dung
     // thang unaccent doi quyen superuser va hong tren Postgres quan ly.
-    expect(makeStrategy().buildQuery('ao', page).sql).toContain('lower(immutable_unaccent(');
+    expect(makeStrategy().buildQuery('ao', page).sql).toContain(
+      'lower("catalog".immutable_unaccent(',
+    );
+  });
+
+  it('ghi ro schema o moi dinh danh, khong dua vao search_path', () => {
+    // Qua PgBouncer o che do transaction pooling (Neon, Supabase), `search_path`
+    // Prisma dat luc ket noi khong con hieu luc cho truy van sau -> SQL tho
+    // khong kem schema se chet voi 42P01. Da xay ra that tren Neon.
+    const { sql } = makeStrategy().buildQuery('ao', page);
+
+    expect(sql).toContain('"catalog"."Product"');
+    expect(sql).not.toMatch(/FROM\s+"Product"/);
+    expect(sql).not.toMatch(/[^.]immutable_unaccent\(/);
   });
 
   it('applies the similarity threshold as a bound parameter', () => {
