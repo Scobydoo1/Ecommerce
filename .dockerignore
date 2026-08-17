@@ -1,0 +1,29 @@
+node_modules
+**/node_modules
+
+# Ket qua build - deu duoc dung lai trong image
+dist
+**/dist
+.next
+**/.next
+.turbo
+**/.turbo
+**/generated
+
+# Bi mat that: KHONG BAO GIO cho vao image. Dockerfile copy .env.example thanh
+# .env, nen file .env that o may dev phai bi loai ra o day.
+.env
+.env.*
+!.env.example
+
+coverage
+**/coverage
+test-results
+**/test-results
+playwright-report
+**/playwright-report
+
+.git
+.github
+docs
+*.log

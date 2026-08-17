@@ -33,8 +33,9 @@ interface TrigramRow {
 /**
  * Fuzzy search dua tren `pg_trgm`.
  *
- * So sanh tren `lower(unaccent(...))` de go thieu dau hoac sai hoa thuong van
- * khop.
+ * So sanh tren `lower(immutable_unaccent(...))` de go thieu dau hoac sai hoa
+ * thuong van khop. `immutable_unaccent` la ham boc do migration tao ra - xem
+ * ghi chu trong migration ve ly do khong dung thang `unaccent`.
  *
  * Dung `word_similarity` chu KHONG dung `similarity`. `similarity` chuan hoa
  * theo hop trigram cua ca hai chuoi, nen mot truy van ngan tren mot ten dai bi
@@ -66,17 +67,17 @@ export class TrigramStrategy implements SearchStrategy {
     return Prisma.sql`
       SELECT p."id",
              GREATEST(
-               word_similarity(${normalizedQuery}, lower(unaccent(p."name"))),
-               word_similarity(${normalizedQuery}, lower(unaccent(coalesce(p."description", ''))))
+               word_similarity(${normalizedQuery}, lower(immutable_unaccent(p."name"))),
+               word_similarity(${normalizedQuery}, lower(immutable_unaccent(coalesce(p."description", ''))))
                  * ${DESCRIPTION_WEIGHT}
              ) AS score
       FROM "Product" p
       WHERE p."status" = 'ACTIVE'
       ${categoryFilter}
       AND (
-        word_similarity(${normalizedQuery}, lower(unaccent(p."name")))
+        word_similarity(${normalizedQuery}, lower(immutable_unaccent(p."name")))
           > ${WORD_SIMILARITY_THRESHOLD}
-        OR word_similarity(${normalizedQuery}, lower(unaccent(coalesce(p."description", ''))))
+        OR word_similarity(${normalizedQuery}, lower(immutable_unaccent(coalesce(p."description", ''))))
              * ${DESCRIPTION_WEIGHT} > ${WORD_SIMILARITY_THRESHOLD}
       )
       ORDER BY score DESC, p."name" ASC

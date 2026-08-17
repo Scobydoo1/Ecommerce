@@ -1,3 +1,10 @@
+-- Extension co the DA duoc cai san o `public` (Postgres quan ly gan nhu luon
+-- lam vay), hoac chua co gi. Prisma dat search_path chi gom `catalog`, nen neu
+-- extension nam o public thi `vector(1536)` va `gin_trgm_ops` khong resolve
+-- duoc va migration chet voi 42704 "type vector does not exist".
+-- Dua ca hai schema vao duong tim de chay duoc trong ca hai truong hop.
+SET search_path TO catalog, public;
+
 -- CreateExtension
 CREATE EXTENSION IF NOT EXISTS "pg_trgm";
 
@@ -88,16 +95,32 @@ ALTER TABLE "ProductImage" ADD CONSTRAINT "ProductImage_productId_fkey" FOREIGN 
 -- ---------------------------------------------------------------------------
 
 -- unaccent() mac dinh KHONG immutable nen Postgres tu choi dung no trong
--- index expression. Danh dau immutable de tao duoc trigram index khong dau.
-ALTER FUNCTION unaccent(text) IMMUTABLE;
+-- index expression.
+--
+-- KHONG dung `ALTER FUNCTION unaccent(text) IMMUTABLE`: unaccent thuoc so huu
+-- cua extension nen lenh do doi quyen superuser, va se bi tu choi tren moi
+-- Postgres quan ly (Neon, Supabase, Railway...). Khi do index nay khong tao
+-- duoc, tuc la tim kiem mo - tinh nang chinh cua san pham - chet ngay khi deploy.
+--
+-- Thay vao do tu tao mot ham boc ma minh so huu. Dang hai tham so
+-- `unaccent('unaccent', $1)` chi ro tu dien nen ket qua tat dinh, do la ly do
+-- danh dau IMMUTABLE o day la dung chu khong phai noi doi trinh toi uu.
+-- `SET search_path` gan vao ham: tu dien 'unaccent' duoc resolve luc GOI ham,
+-- ma luc do search_path cua ung dung chi co `catalog`. Neu extension nam o
+-- public thi moi loi goi tim kiem se hong khi chay. Ghim duong tim vao ham
+-- khien no dung o moi noi, khong phu thuoc nguoi goi.
+CREATE FUNCTION immutable_unaccent(text) RETURNS text
+  LANGUAGE sql IMMUTABLE STRICT PARALLEL SAFE
+  SET search_path = catalog, public, pg_catalog
+  AS $$ SELECT unaccent('unaccent', $1) $$;
 
 -- Fuzzy search: khong dau, khong phan biet hoa thuong.
 -- "ao thun" / "áo thun" / "Aó Thun" deu khop cung mot index.
 CREATE INDEX "Product_name_trgm_idx"
-  ON "Product" USING GIN (lower(unaccent("name")) gin_trgm_ops);
+  ON "Product" USING GIN (lower(immutable_unaccent("name")) gin_trgm_ops);
 
 CREATE INDEX "Product_description_trgm_idx"
-  ON "Product" USING GIN (lower(unaccent(coalesce("description", ''))) gin_trgm_ops);
+  ON "Product" USING GIN (lower(immutable_unaccent(coalesce("description", ''))) gin_trgm_ops);
 
 -- Semantic search Phase 2 (AD-1). Cot "embedding" luon NULL trong Phase 1;
 -- index tao san de Phase 2 chi viec fill du lieu va bat VectorStrategy.

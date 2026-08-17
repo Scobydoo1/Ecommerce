@@ -13,7 +13,7 @@ Ký hiệu công sức: **S** = dưới nửa ngày · **M** = 1–3 ngày · **
 | Nhóm | Việc | Công sức | Chặn cái gì |
 |---|---|---|---|
 | 1 | Đóng nốt hai lỗ hổng Phase 1 | M | Tuyên bố "Phase 1 xong hoàn toàn" |
-| 2 | Đưa lên mạng để demo | M | Đưa link vào CV |
+| 2 | ~~Đưa lên mạng để demo~~ — **phần chuẩn bị đã xong**, xem [deploy.md](deploy.md) | — | Đưa link vào CV |
 | 3 | Phase 2 — AI Customer Service Agent | L | — |
 | 4 | Phase 3 — Admin Ops Dashboard | L | Vận hành thật |
 | 5 | Phase 4 — Analytics real-time | L | — |

@@ -4,9 +4,10 @@
   "private": true,
   "description": "Next.js storefront cho khach hang",
   "scripts": {
+    "//scripts": "Chi `dev` boc qua dotenv (tien khi lam o may). `build`/`start` khong boc: tren production khong co file .env, bien do nen tang tiem vao, va dotenv-cli se loi vi thieu file.",
     "dev": "dotenv -e ../../.env -- next dev",
-    "build": "dotenv -e ../../.env -- next build",
-    "start": "dotenv -e ../../.env -- next start",
+    "build": "next build",
+    "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "jest --config jest.config.ts"

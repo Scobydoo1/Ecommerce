@@ -20,8 +20,10 @@ describe('TrigramStrategy.buildQuery', () => {
     expect(makeStrategy().buildQuery('ao', page).sql).toContain('ACTIVE');
   });
 
-  it('compares on lower(unaccent(...)) so diacritics and case do not matter', () => {
-    expect(makeStrategy().buildQuery('ao', page).sql).toContain('lower(unaccent(');
+  it('compares on lower(immutable_unaccent(...)) so diacritics and case do not matter', () => {
+    // `immutable_unaccent` chu khong phai `unaccent`: xem migration init - dung
+    // thang unaccent doi quyen superuser va hong tren Postgres quan ly.
+    expect(makeStrategy().buildQuery('ao', page).sql).toContain('lower(immutable_unaccent(');
   });
 
   it('applies the similarity threshold as a bound parameter', () => {
