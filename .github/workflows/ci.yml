@@ -12,7 +12,7 @@ concurrency:
 env:
   # Turborepo va Next deu doc bien tu day. Khong co bi mat that nao trong
   # .env.example - no chi tro toi Postgres/Redis chay trong CI.
-  NODE_VERSION: '20'
+  NODE_VERSION: '22'
 
 jobs:
   secrets:

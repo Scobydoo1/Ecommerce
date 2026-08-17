@@ -4,7 +4,7 @@
 
 | Thứ | Bản | Ghi chú |
 |---|---|---|
-| Node.js | ≥ 20 | Đã kiểm trên 24.14 |
+| Node.js | ≥ 22.13 | pnpm 11 yêu cầu mức này. Đã kiểm trên 24.14 |
 | pnpm | 11.x | Xem lưu ý bên dưới nếu `corepack` bị chặn |
 | Docker | bất kỳ bản còn hỗ trợ | Chạy Postgres + Redis, và Testcontainers cho integration test |
 
