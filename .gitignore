@@ -12,10 +12,11 @@ out/
 # Turborepo
 .turbo/
 
-# Environment — never commit real secrets
+# Environment — never commit real secrets.
+# `.env.*` bat tat ca bien the (.env.production, .env.staging...) roi mo ngoai le
+# dung mot file mau. Liet ke tung ten cu the de sot .env.production.
 .env
-.env.local
-.env.*.local
+.env.*
 !.env.example
 
 # Test / coverage

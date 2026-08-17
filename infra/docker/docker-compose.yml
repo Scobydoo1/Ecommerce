@@ -8,16 +8,21 @@ services:
     container_name: ecommerce-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ecommerce
-      POSTGRES_PASSWORD: ecommerce
-      POSTGRES_DB: ecommerce
+      # Doc tu .env, co gia tri mac dinh de `docker compose up` chay ngay sau khi
+      # clone. Doi mat khau thi sua .env, khong sua file nay - de mat khau that
+      # khong bao gio nam trong git.
+      POSTGRES_USER: ${POSTGRES_USER:-ecommerce}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ecommerce}
+      POSTGRES_DB: ${POSTGRES_DB:-ecommerce}
     ports:
-      - "5432:5432"
+      # Chi mo tren loopback: khong de Postgres lo ra mang LAN hay Internet.
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
       - ./postgres/init.sql:/docker-entrypoint-initdb.d/00-init.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ecommerce -d ecommerce"]
+      test:
+        ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ecommerce} -d ${POSTGRES_DB:-ecommerce}"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -28,7 +33,7 @@ services:
     restart: unless-stopped
     command: ["redis-server", "--appendonly", "yes"]
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     volumes:
       - redis-data:/data
     healthcheck:
